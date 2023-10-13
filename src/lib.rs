@@ -18,22 +18,20 @@ fn tempering_shift_t(y: u64) -> u64 { y << 15 }
 fn tempering_shift_l(y: u64) -> u64 { y >> 18 }
 
 
-#[derive(Default)]
 struct Prng {
     seed: u64,
-    mt: Vec<u64>,
+    mt: [u64;N],
     index: usize
 }
 
 #[allow(dead_code, unused_variables)]
 impl Prng {
-    fn default(seed: u64) -> Prng {
-        let t: (Vec<u64>, usize) = Prng::init_vec(seed);
-        Prng {
-            seed: seed,
-            mt: t.0,
-            index: t.1
-        }
+    pub fn new(seed: u64) -> Self {
+        let mt = [0; N];
+        let index = 0;
+        let mut obj = Self {seed, mt, index};
+        obj.reset(seed);
+        obj
     }
     
     pub fn uniform01(&mut self) -> f64 {
@@ -71,14 +69,13 @@ impl Prng {
         (y as f64) / (Y_MAX as f64)
     }
     
-    fn init_vec(seed: u64) -> (Vec<u64>, usize) {
-        let mut mt: Vec<u64> = Vec::new();
-        mt.push(seed & 0xffffffff);
-        
+    pub fn reset(&mut self, seed: u64) {
+        self.seed = seed;        
+        self.mt[0] = seed & 0xffffffff;        
         for i in 1..N {
-            mt.push( (69069 * mt[i-1]) & 0xffffffff );
-        }
-        (mt, N-1)
+            self.mt[i] = (69069 * self.mt[i-1]) & 0xffffffff;
+        }        
+        self.index = N - 1;
     }
 }
 
@@ -90,7 +87,7 @@ mod tests {
     
     #[test]
     fn unform01() {
-        let mut prng = Prng::default(1345);
+        let mut prng = Prng::new(1345);
         
         for _i in 1..1000 {
             let u = prng.uniform01();
